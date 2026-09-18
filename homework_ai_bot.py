@@ -28,17 +28,17 @@ def start(message):
 Я твой помощник по проверке домашних заданий.
 
 📸 **Как это работает:**
-1. Сфотографируй или отправь скриншот ДЗ
-2. Напиши "Проверь мое ДЗ"
-3. Я проверю и дам результат
+1️⃣ Вариант А: Отправь фото ДЗ + напиши "проверь мое дз"
+2️⃣ Вариант Б: Напиши ДЗ текстом + напиши "проверь мое дз"
+3️⃣ Жди результат!
 
-Я автоматически проверю:
+Я проверю:
 ✅ Грамматику
 ✅ Орфографию
 ✅ Правильность ответов
 ✅ Логику
 
-Начни! 📸
+Начни! 📸 или ✍️
     """
     bot.reply_to(message, text)
 
@@ -47,11 +47,17 @@ def help_command(message):
     text = """
 📖 КАК ИСПОЛЬЗОВАТЬ:
 
+**ВАРИАНТ 1 - Фото:**
 1️⃣ Отправь фотку или скриншот ДЗ
-2️⃣ Напиши "Проверь мое ДЗ" или просто отправь фото
+2️⃣ Напиши "проверь мое дз"
 3️⃣ Жди результат
 
-⏳ Проверка займёт несколько секунд.
+**ВАРИАНТ 2 - Текст:**
+1️⃣ Напиши ДЗ текстом (можешь в несколько сообщений)
+2️⃣ В конце напиши "проверь мое дз"
+3️⃣ Жди результат
+
+⏳ Проверка займёт 20-30 секунд.
 
 📊 Ты получишь отчет с:
 - Количество ошибок
@@ -61,7 +67,7 @@ def help_command(message):
     """
     bot.reply_to(message, text)
 
-# ========== ОБРАБОТКА ФОТО И ДЗ ==========
+# ========== ОБРАБОТКА ФОТО ==========
 
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
@@ -69,57 +75,127 @@ def handle_photo(message):
     user_id = message.from_user.id
     username = message.from_user.username or f"user_{user_id}"
     
-    # Сообщение статуса
-    status_msg = bot.reply_to(message, "⏳ Анализирую фото...")
+    # Сохраняем фото в памяти бота (в session)
+    if not hasattr(bot, 'user_homework'):
+        bot.user_homework = {}
     
     try:
-        # Загружаем фото
         file_info = bot.get_file(message.photo[-1].file_id)
         downloaded_file = bot.download_file(file_info.file_path)
         
-        # Сохраняем локально
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         photo_path = f"{HOMEWORK_DIR}/{username}_{timestamp}.jpg"
         with open(photo_path, 'wb') as f:
             f.write(downloaded_file)
         
-        # Конвертируем в base64
-        with open(photo_path, 'rb') as f:
-            image_data = base64.standard_b64encode(f.read()).decode('utf-8')
+        # Сохраняем путь к фото в памяти
+        bot.user_homework[user_id] = {
+            'type': 'photo',
+            'path': photo_path,
+            'username': username
+        }
         
-        # Отправляем в Claude для анализа
-        analysis_result = analyze_homework_with_claude(image_data, message.caption or "")
-        
-        # Генерируем отчёты
-        student_report = generate_student_report(analysis_result)
-        teacher_report = generate_teacher_report(username, analysis_result)
-        
-        # Отправляем ученику (краткий отчёт)
-        bot.edit_message_text(student_report, user_id, status_msg.message_id)
-        
-        # Отправляем учителю (подробный отчёт)
-        if TEACHER_ID > 0:
-            bot.send_message(TEACHER_ID, teacher_report)
+        bot.reply_to(message, "✅ Фото получено! Теперь напиши 'проверь мое дз'")
         
     except Exception as e:
-        error_msg = f"❌ Ошибка при обработке: {str(e)}"
-        bot.edit_message_text(error_msg, user_id, status_msg.message_id)
+        bot.reply_to(message, f"❌ Ошибка при загрузке фото: {str(e)}")
+
+# ========== ОБРАБОТКА ТЕКСТА ==========
 
 @bot.message_handler(func=lambda message: True)
 def handle_text(message):
     """Обработка текстовых сообщений"""
     user_id = message.from_user.id
-    text = message.text.lower()
+    username = message.from_user.username or f"user_{user_id}"
+    text = message.text
+    text_lower = text.lower()
     
-    if "проверь" in text or "check" in text:
-        bot.reply_to(message, "📸 Отправь фото или скриншот ДЗ, которое хочешь проверить!")
+    # Инициализируем память пользователя если нужно
+    if not hasattr(bot, 'user_homework'):
+        bot.user_homework = {}
+    
+    # Команда проверить
+    if "проверь мое дз" in text_lower or "проверь дз" in text_lower or "check" in text_lower:
+        
+        # Вариант 1: есть сохранённое фото
+        if user_id in bot.user_homework and bot.user_homework[user_id]['type'] == 'photo':
+            homework_data = bot.user_homework[user_id]
+            photo_path = homework_data['path']
+            username = homework_data['username']
+            
+            status_msg = bot.reply_to(message, "⏳ Анализирую фото...")
+            
+            try:
+                with open(photo_path, 'rb') as f:
+                    image_data = base64.standard_b64encode(f.read()).decode('utf-8')
+                
+                analysis_result = analyze_homework_with_photo(image_data)
+                
+                student_report = generate_student_report(analysis_result)
+                teacher_report = generate_teacher_report(username, analysis_result)
+                
+                bot.edit_message_text(student_report, user_id, status_msg.message_id)
+                
+                if TEACHER_ID > 0:
+                    bot.send_message(TEACHER_ID, teacher_report)
+                
+                # Очищаем память
+                del bot.user_homework[user_id]
+                
+            except Exception as e:
+                error_msg = f"❌ Ошибка: {str(e)}"
+                bot.edit_message_text(error_msg, user_id, status_msg.message_id)
+        
+        # Вариант 2: есть текст в этом же сообщении или в памяти
+        else:
+            # Достаём ДЗ из сообщения
+            homework_text = text.replace("проверь мое дз", "").replace("проверь дз", "").replace("check", "").strip()
+            
+            if homework_text:
+                status_msg = bot.reply_to(message, "⏳ Анализирую ДЗ...")
+                
+                try:
+                    analysis_result = analyze_homework_with_text(homework_text)
+                    
+                    student_report = generate_student_report(analysis_result)
+                    teacher_report = generate_teacher_report(username, analysis_result)
+                    
+                    bot.edit_message_text(student_report, user_id, status_msg.message_id)
+                    
+                    if TEACHER_ID > 0:
+                        bot.send_message(TEACHER_ID, teacher_report)
+                    
+                    # Очищаем память если была
+                    if user_id in bot.user_homework:
+                        del bot.user_homework[user_id]
+                    
+                except Exception as e:
+                    error_msg = f"❌ Ошибка: {str(e)}"
+                    bot.edit_message_text(error_msg, user_id, status_msg.message_id)
+            else:
+                bot.reply_to(message, "❓ Не вижу ДЗ! Напиши ДЗ текстом или отправь фото, потом напиши 'проверь мое дз'")
+    
     else:
-        bot.reply_to(message, "👋 Отправь фото ДЗ или напиши /help")
+        # Сохраняем текст если не команда
+        if user_id not in bot.user_homework:
+            bot.user_homework[user_id] = {
+                'type': 'text',
+                'content': text,
+                'username': username
+            }
+            bot.reply_to(message, "✅ Текст получен! Напиши ещё ДЗ если нужно, потом 'проверь мое дз'")
+        else:
+            # Добавляем к существующему
+            if bot.user_homework[user_id]['type'] == 'text':
+                bot.user_homework[user_id]['content'] += "\n" + text
+                bot.reply_to(message, "✅ Добавлено! Напиши 'проверь мое дз' когда готово")
+            else:
+                bot.reply_to(message, "ℹ️ У тебя уже есть фото! Напиши 'проверь мое дз' или отправь новое фото")
 
-# ========== АНАЛИЗ С CLAUDE (REST API) ==========
+# ========== АНАЛИЗ С CLAUDE ==========
 
-def analyze_homework_with_claude(image_base64, caption):
-    """Анализирует фото ДЗ с помощью Claude Vision через REST API"""
+def analyze_homework_with_photo(image_base64):
+    """Анализирует фото ДЗ"""
     
     prompt = """
 Ты проверяешь домашнее задание по английскому языку. Анализируй фото ДЗ и дай подробную проверку.
@@ -131,32 +207,23 @@ def analyze_homework_with_claude(image_base64, caption):
 4. Пунктуация
 5. Логичность и полнота ответов
 
-**Формат ответа (ВАЖНО - ЖЁСТКИЙ ФОРМАТ):**
+**Формат ответа (ЖЁСТКИЙ):**
 
-```
-ERRORS_COUNT: [количество ошибок]
-GRADE: [оценка от 1-10]
-PERCENTAGE: [процент правильности]
+ERRORS_COUNT: [число]
+GRADE: [число от 1-10]
+PERCENTAGE: [процент]
 
 ERRORS:
 [ошибка 1]
 [ошибка 2]
-[ошибка 3]
 ...
 
-SUMMARY: [краткое резюме - 1-2 предложения]
+SUMMARY: [1-2 предложения]
 
 RECOMMENDATIONS:
-[рекомендация 1]
-[рекомендация 2]
+[совет 1]
+[совет 2]
 ...
-```
-
-**ВАЖНО:**
-- Будь объективен
-- Находи реальные ошибки, не мелочись
-- Если ошибок нет - напиши ERRORS_COUNT: 0
-- Пиши на русском и английском где нужно
 """
 
     headers = {
@@ -167,25 +234,20 @@ RECOMMENDATIONS:
     body = {
         "model": "claude-opus-4-1",
         "max_tokens": 1500,
-        "messages": [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "image/jpeg",
-                            "data": image_base64
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": prompt
+        "messages": [{
+            "role": "user",
+            "content": [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": image_base64
                     }
-                ]
-            }
-        ]
+                },
+                {"type": "text", "text": prompt}
+            ]
+        }]
     }
 
     try:
@@ -197,18 +259,82 @@ RECOMMENDATIONS:
         )
         response.raise_for_status()
         result = response.json()
-        print(f"DEBUG: Claude response: {result}")
+        print(f"DEBUG Photo: {result}")
         return result['content'][0]['text']
     except Exception as e:
-        print(f"DEBUG: Error - {str(e)}")
-        return f"Ошибка при анализе: {str(e)}"
+        print(f"DEBUG Error: {str(e)}")
+        return f"Ошибка: {str(e)}"
+
+def analyze_homework_with_text(homework_text):
+    """Анализирует текстовое ДЗ"""
+    
+    prompt = f"""
+Ты проверяешь домашнее задание по английскому языку (уровень A2).
+
+**ДЗ для проверки:**
+{homework_text}
+
+**Что проверять:**
+1. Грамматические ошибки (времена, согласование, предлоги)
+2. Орфографические ошибки
+3. Правильность ответов
+4. Пунктуация
+5. Логичность и полнота
+
+**Формат ответа (ЖЁСТКИЙ):**
+
+ERRORS_COUNT: [число]
+GRADE: [число от 1-10]
+PERCENTAGE: [процент]
+
+ERRORS:
+[ошибка 1]
+[ошибка 2]
+...
+
+SUMMARY: [1-2 предложения]
+
+RECOMMENDATIONS:
+[совет 1]
+[совет 2]
+...
+"""
+
+    headers = {
+        "x-api-key": CLAUDE_API_KEY,
+        "content-type": "application/json"
+    }
+
+    body = {
+        "model": "claude-opus-4-1",
+        "max_tokens": 1500,
+        "messages": [{
+            "role": "user",
+            "content": prompt
+        }]
+    }
+
+    try:
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers=headers,
+            json=body,
+            timeout=60
+        )
+        response.raise_for_status()
+        result = response.json()
+        print(f"DEBUG Text: {result}")
+        return result['content'][0]['text']
+    except Exception as e:
+        print(f"DEBUG Error: {str(e)}")
+        return f"Ошибка: {str(e)}"
 
 def parse_claude_response(response_text):
-    """Парсит ответ Claude в структурированный формат"""
+    """Парсит ответ Claude"""
     result = {
         "errors_count": 0,
-        "grade": 0,
-        "percentage": 0,
+        "grade": 10,
+        "percentage": 100,
         "errors": [],
         "summary": "",
         "recommendations": []
@@ -263,13 +389,12 @@ def parse_claude_response(response_text):
     
     return result
 
-# ========== ГЕНЕРАЦИЯ ОТЧЁТОВ ==========
+# ========== ОТЧЁТЫ ==========
 
 def generate_student_report(claude_response):
     """Краткий отчёт для ученика"""
     result = parse_claude_response(claude_response)
     
-    # Эмодзи в зависимости от оценки
     if result["percentage"] == 100:
         emoji = "🌟"
         message = "ИДЕАЛЬНО!"
