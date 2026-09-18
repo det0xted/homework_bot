@@ -197,51 +197,7 @@ def handle_text(message):
 def analyze_homework_with_photo(image_base64):
     """Анализирует фото ДЗ"""
     
-    prompt = """You are a strict English grammar teacher. Read the homework photo carefully and find EVERY SINGLE ERROR.
-
-INSTRUCTIONS:
-1. Read all text in the photo VERY CAREFULLY
-2. Check EVERY word for mistakes
-3. Do NOT miss any errors
-4. Find at least 1 error (homework usually has mistakes)
-
-CHECK FOR THESE ERRORS:
-- Subject-verb agreement: "It live" → "It lives", "Crocodiles is" → "Crocodiles are"
-- Verb tenses: wrong forms, wrong time
-- Articles: missing a/an/the
-- Prepositions: wrong in/at/on/to/for
-- Spelling: typos and misspellings
-- Plurals: wrong singular/plural
-- Word order: wrong sentence structure
-- Capitalization: missing or wrong capitals
-- Punctuation: missing periods, commas
-- Any other grammar mistake
-
-EXAMPLES OF ERRORS:
-"A crocodile are dangerous" → WRONG! "are" should be "is"
-"It live in swamps" → WRONG! "live" should be "lives"
-"The mosquito bite people" → WRONG! "bite" should be "bites"
-"They is going" → WRONG! "is" should be "are"
-
-READ VERY CAREFULLY. Find all mistakes. Even small ones count!
-
-After checking, respond in this EXACT format:
-
-ERRORS_COUNT: [number]
-GRADE: [1-10 score]
-PERCENTAGE: [percentage]
-
-ERRORS:
-• Describe error 1
-• Describe error 2
-• Describe error 3
-
-SUMMARY: Brief comment
-
-RECOMMENDATIONS:
-• Tip 1
-• Tip 2
-"""
+    prompt = "Find all grammar errors in this English homework. Count them. Format: ERRORS_COUNT: X\nGRADE: Y\nPERCENTAGE: Z"
 
     headers = {
         "x-api-key": CLAUDE_API_KEY,
@@ -250,21 +206,26 @@ RECOMMENDATIONS:
 
     body = {
         "model": "claude-3-5-sonnet-20241022",
-        "max_tokens": 1500,
-        "messages": [{
-            "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": "image/jpeg",
-                        "data": image_base64
+        "max_tokens": 500,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/jpeg",
+                            "data": image_base64
+                        }
+                    },
+                    {
+                        "type": "text",
+                        "text": prompt
                     }
-                },
-                {"type": "text", "text": prompt}
-            ]
-        }]
+                ]
+            }
+        ]
     }
 
     try:
@@ -280,54 +241,16 @@ RECOMMENDATIONS:
         return result['content'][0]['text']
     except Exception as e:
         print(f"DEBUG Error: {str(e)}")
+        print(f"DEBUG Body model: {body['model']}")
         return f"Ошибка: {str(e)}"
 
 def analyze_homework_with_text(homework_text):
     """Анализирует текстовое ДЗ"""
     
-    prompt = f"""You are a strict English grammar teacher. Analyze this homework and find EVERY single error.
-
-HOMEWORK:
-{homework_text}
-
-CHECK FOR THESE ERRORS (DO NOT MISS ANY):
-- Subject-verb agreement: "It live" should be "It lives", "Crocodiles is" should be "Crocodiles are"
-- Verb tenses: wrong past/present forms
-- Articles: missing a/an/the
-- Prepositions: wrong in/at/on/to/for
-- Spelling: typos
-- Plurals: wrong singular/plural
-- Word order: wrong sentence structure
-- Capitalization: Wrong or missing capitals
-- Punctuation: missing periods, commas
-- Any other grammar mistake
-
-EXAMPLES OF ERRORS YOU MUST FIND:
-"A crocodile are dangerous" → WRONG! Should be "is" not "are"
-"It live in swamps" → WRONG! Should be "lives" not "live"
-"The mosquito bite people" → WRONG! Should be "bites" not "bite"
-"They is big" → WRONG! Should be "are" not "is"
-"He go to school" → WRONG! Should be "goes" not "go"
-
-READ THE TEXT CAREFULLY AND FIND ALL MISTAKES. DO NOT SAY "NO ERRORS" UNLESS TRULY PERFECT.
-
-After finding errors, respond in this EXACT format:
-
-ERRORS_COUNT: [number of errors found]
-GRADE: [score 1-10: 10=perfect, 9=1 error, 8=2 errors, etc]
-PERCENTAGE: [score * 10]
-
-ERRORS:
-• Error description 1
-• Error description 2
-• Error description 3
-
-SUMMARY: Brief comment
-
-RECOMMENDATIONS:
-• Advice 1
-• Advice 2
-"""
+    # Экранируем текст
+    homework_text = homework_text.replace('"', '\\"').replace('\n', ' ')
+    
+    prompt = f"Check this English homework and count grammar errors: {homework_text}\n\nFormat: ERRORS_COUNT: X\nGRADE: Y\nPERCENTAGE: Z"
 
     headers = {
         "x-api-key": CLAUDE_API_KEY,
@@ -336,11 +259,13 @@ RECOMMENDATIONS:
 
     body = {
         "model": "claude-3-5-sonnet-20241022",
-        "max_tokens": 1500,
-        "messages": [{
-            "role": "user",
-            "content": prompt
-        }]
+        "max_tokens": 500,
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
     }
 
     try:
@@ -356,6 +281,7 @@ RECOMMENDATIONS:
         return result['content'][0]['text']
     except Exception as e:
         print(f"DEBUG Error: {str(e)}")
+        print(f"DEBUG Body: {body}")
         return f"Ошибка: {str(e)}"
 
 def parse_claude_response(response_text):
