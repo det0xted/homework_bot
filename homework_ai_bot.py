@@ -197,50 +197,50 @@ def handle_text(message):
 def analyze_homework_with_photo(image_base64):
     """Анализирует фото ДЗ"""
     
-    prompt = """TASK: You are an English teacher checking A2-level student homework from a photo. You MUST find ALL grammar, spelling, and logic errors.
+    prompt = """You are a strict English grammar teacher. Read the homework photo carefully and find EVERY SINGLE ERROR.
 
 INSTRUCTIONS:
-1. Read the homework text in the photo CAREFULLY
-2. Find EVERY error - grammar, spelling, logic, punctuation
-3. Do NOT miss any errors, no matter how small
-4. Count total errors
+1. Read all text in the photo VERY CAREFULLY
+2. Check EVERY word for mistakes
+3. Do NOT miss any errors
+4. Find at least 1 error (homework usually has mistakes)
 
-TYPES OF ERRORS TO FIND:
-1. Subject-verb agreement (he/she/it + verb, plural subjects + verb)
-2. Wrong verb forms/tenses (present/past, do/does, is/are)
-3. Missing articles (a/an/the)
-4. Preposition errors (in/at/on, to/for, etc)
-5. Spelling mistakes
-6. Capitalization errors
-7. Pluralization errors
-8. Wrong word choice
-9. Punctuation
-10. Incomplete sentences
+CHECK FOR THESE ERRORS:
+- Subject-verb agreement: "It live" → "It lives", "Crocodiles is" → "Crocodiles are"
+- Verb tenses: wrong forms, wrong time
+- Articles: missing a/an/the
+- Prepositions: wrong in/at/on/to/for
+- Spelling: typos and misspellings
+- Plurals: wrong singular/plural
+- Word order: wrong sentence structure
+- Capitalization: missing or wrong capitals
+- Punctuation: missing periods, commas
+- Any other grammar mistake
 
 EXAMPLES OF ERRORS:
-- "A crocodile is a dangerous animal. It live in swamps." → ERROR: "It live" should be "It lives"
-- "Crocodiles is big" → ERROR: "is" should be "are"
-- "Their very small" → ERROR: should be "They're" or "It's"
-- "The mosquito bite people" → ERROR: should be "bites"
+"A crocodile are dangerous" → WRONG! "are" should be "is"
+"It live in swamps" → WRONG! "live" should be "lives"
+"The mosquito bite people" → WRONG! "bite" should be "bites"
+"They is going" → WRONG! "is" should be "are"
 
-CRITICAL: Find EVERY error! Look carefully at the photo!
+READ VERY CAREFULLY. Find all mistakes. Even small ones count!
 
-FORMAT (STRICT - DO NOT DEVIATE):
+After checking, respond in this EXACT format:
 
-ERRORS_COUNT: [TOTAL NUMBER]
-GRADE: [NUMBER 1-10]
-PERCENTAGE: [PERCENTAGE 0-100]
+ERRORS_COUNT: [number]
+GRADE: [1-10 score]
+PERCENTAGE: [percentage]
 
 ERRORS:
-• [Error 1 - say what is wrong and what should be correct]
-• [Error 2 - exact location and correction]
-• [Error 3]
+• Describe error 1
+• Describe error 2
+• Describe error 3
 
-SUMMARY: [1-2 sentences about overall quality]
+SUMMARY: Brief comment
 
 RECOMMENDATIONS:
-• [Specific advice to improve]
-• [Another tip]
+• Tip 1
+• Tip 2
 """
 
     headers = {
@@ -285,47 +285,48 @@ RECOMMENDATIONS:
 def analyze_homework_with_text(homework_text):
     """Анализирует текстовое ДЗ"""
     
-    prompt = f"""TASK: You are an English teacher checking A2-level student homework. You MUST find ALL grammar, spelling, and logic errors.
+    prompt = f"""You are a strict English grammar teacher. Analyze this homework and find EVERY single error.
 
-HOMEWORK TO CHECK:
+HOMEWORK:
 {homework_text}
 
-TYPES OF ERRORS TO FIND:
-1. Subject-verb agreement (he/she/it + verb, plural subjects + verb)
-2. Wrong verb forms/tenses (present/past, do/does, is/are)
-3. Missing articles (a/an/the)
-4. Preposition errors (in/at/on, to/for, etc)
-5. Spelling mistakes
-6. Capitalization errors
-7. Pluralization errors
-8. Wrong word choice
-9. Punctuation
-10. Incomplete sentences
+CHECK FOR THESE ERRORS (DO NOT MISS ANY):
+- Subject-verb agreement: "It live" should be "It lives", "Crocodiles is" should be "Crocodiles are"
+- Verb tenses: wrong past/present forms
+- Articles: missing a/an/the
+- Prepositions: wrong in/at/on/to/for
+- Spelling: typos
+- Plurals: wrong singular/plural
+- Word order: wrong sentence structure
+- Capitalization: Wrong or missing capitals
+- Punctuation: missing periods, commas
+- Any other grammar mistake
 
-EXAMPLES OF ERRORS:
-- "A crocodile is a dangerous animal. It live in swamps." → ERROR: "It live" should be "It lives"
-- "Crocodiles is big" → ERROR: "is" should be "are"
-- "Their very small" → ERROR: should be "They're" or "It's"
-- "The mosquito bite people" → ERROR: should be "bites"
+EXAMPLES OF ERRORS YOU MUST FIND:
+"A crocodile are dangerous" → WRONG! Should be "is" not "are"
+"It live in swamps" → WRONG! Should be "lives" not "live"
+"The mosquito bite people" → WRONG! Should be "bites" not "bite"
+"They is big" → WRONG! Should be "are" not "is"
+"He go to school" → WRONG! Should be "goes" not "go"
 
-CRITICAL: Look for EVERY error, even small ones!
+READ THE TEXT CAREFULLY AND FIND ALL MISTAKES. DO NOT SAY "NO ERRORS" UNLESS TRULY PERFECT.
 
-FORMAT (STRICT - DO NOT DEVIATE):
+After finding errors, respond in this EXACT format:
 
-ERRORS_COUNT: [TOTAL NUMBER]
-GRADE: [NUMBER 1-10]
-PERCENTAGE: [PERCENTAGE 0-100]
+ERRORS_COUNT: [number of errors found]
+GRADE: [score 1-10: 10=perfect, 9=1 error, 8=2 errors, etc]
+PERCENTAGE: [score * 10]
 
 ERRORS:
-• [Error 1 - say what is wrong and what should be correct]
-• [Error 2 - exact location and correction]
-• [Error 3]
+• Error description 1
+• Error description 2
+• Error description 3
 
-SUMMARY: [1-2 sentences about overall quality]
+SUMMARY: Brief comment
 
 RECOMMENDATIONS:
-• [Specific advice to improve]
-• [Another tip]
+• Advice 1
+• Advice 2
 """
 
     headers = {
