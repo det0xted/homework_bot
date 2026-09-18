@@ -197,33 +197,50 @@ def handle_text(message):
 def analyze_homework_with_photo(image_base64):
     """Анализирует фото ДЗ"""
     
-    prompt = """
-Ты проверяешь домашнее задание по английскому языку. Анализируй фото ДЗ и дай подробную проверку.
+    prompt = """TASK: You are an English teacher checking A2-level student homework from a photo. You MUST find ALL grammar, spelling, and logic errors.
 
-**Что проверять:**
-1. Грамматические ошибки (времена, согласование, предлоги)
-2. Орфографические ошибки (опечатки)
-3. Правильность ответов на вопросы
-4. Пунктуация
-5. Логичность и полнота ответов
+INSTRUCTIONS:
+1. Read the homework text in the photo CAREFULLY
+2. Find EVERY error - grammar, spelling, logic, punctuation
+3. Do NOT miss any errors, no matter how small
+4. Count total errors
 
-**Формат ответа (ЖЁСТКИЙ):**
+TYPES OF ERRORS TO FIND:
+1. Subject-verb agreement (he/she/it + verb, plural subjects + verb)
+2. Wrong verb forms/tenses (present/past, do/does, is/are)
+3. Missing articles (a/an/the)
+4. Preposition errors (in/at/on, to/for, etc)
+5. Spelling mistakes
+6. Capitalization errors
+7. Pluralization errors
+8. Wrong word choice
+9. Punctuation
+10. Incomplete sentences
 
-ERRORS_COUNT: [число]
-GRADE: [число от 1-10]
-PERCENTAGE: [процент]
+EXAMPLES OF ERRORS:
+- "A crocodile is a dangerous animal. It live in swamps." → ERROR: "It live" should be "It lives"
+- "Crocodiles is big" → ERROR: "is" should be "are"
+- "Their very small" → ERROR: should be "They're" or "It's"
+- "The mosquito bite people" → ERROR: should be "bites"
+
+CRITICAL: Find EVERY error! Look carefully at the photo!
+
+FORMAT (STRICT - DO NOT DEVIATE):
+
+ERRORS_COUNT: [TOTAL NUMBER]
+GRADE: [NUMBER 1-10]
+PERCENTAGE: [PERCENTAGE 0-100]
 
 ERRORS:
-[ошибка 1]
-[ошибка 2]
-...
+• [Error 1 - say what is wrong and what should be correct]
+• [Error 2 - exact location and correction]
+• [Error 3]
 
-SUMMARY: [1-2 предложения]
+SUMMARY: [1-2 sentences about overall quality]
 
 RECOMMENDATIONS:
-[совет 1]
-[совет 2]
-...
+• [Specific advice to improve]
+• [Another tip]
 """
 
     headers = {
@@ -268,36 +285,47 @@ RECOMMENDATIONS:
 def analyze_homework_with_text(homework_text):
     """Анализирует текстовое ДЗ"""
     
-    prompt = f"""
-Ты проверяешь домашнее задание по английскому языку (уровень A2).
+    prompt = f"""TASK: You are an English teacher checking A2-level student homework. You MUST find ALL grammar, spelling, and logic errors.
 
-**ДЗ для проверки:**
+HOMEWORK TO CHECK:
 {homework_text}
 
-**Что проверять:**
-1. Грамматические ошибки (времена, согласование, предлоги)
-2. Орфографические ошибки
-3. Правильность ответов
-4. Пунктуация
-5. Логичность и полнота
+TYPES OF ERRORS TO FIND:
+1. Subject-verb agreement (he/she/it + verb, plural subjects + verb)
+2. Wrong verb forms/tenses (present/past, do/does, is/are)
+3. Missing articles (a/an/the)
+4. Preposition errors (in/at/on, to/for, etc)
+5. Spelling mistakes
+6. Capitalization errors
+7. Pluralization errors
+8. Wrong word choice
+9. Punctuation
+10. Incomplete sentences
 
-**Формат ответа (ЖЁСТКИЙ):**
+EXAMPLES OF ERRORS:
+- "A crocodile is a dangerous animal. It live in swamps." → ERROR: "It live" should be "It lives"
+- "Crocodiles is big" → ERROR: "is" should be "are"
+- "Their very small" → ERROR: should be "They're" or "It's"
+- "The mosquito bite people" → ERROR: should be "bites"
 
-ERRORS_COUNT: [число]
-GRADE: [число от 1-10]
-PERCENTAGE: [процент]
+CRITICAL: Look for EVERY error, even small ones!
+
+FORMAT (STRICT - DO NOT DEVIATE):
+
+ERRORS_COUNT: [TOTAL NUMBER]
+GRADE: [NUMBER 1-10]
+PERCENTAGE: [PERCENTAGE 0-100]
 
 ERRORS:
-[ошибка 1]
-[ошибка 2]
-...
+• [Error 1 - say what is wrong and what should be correct]
+• [Error 2 - exact location and correction]
+• [Error 3]
 
-SUMMARY: [1-2 предложения]
+SUMMARY: [1-2 sentences about overall quality]
 
 RECOMMENDATIONS:
-[совет 1]
-[совет 2]
-...
+• [Specific advice to improve]
+• [Another tip]
 """
 
     headers = {
