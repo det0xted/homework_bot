@@ -1,9 +1,8 @@
 import telebot
-import anthropic
+import requests
 import base64
 import os
 from datetime import datetime
-from pathlib import Path
 
 # Переменные окружения
 BOT_TOKEN = os.getenv("BOT_TOKEN", "YOUR_BOT_TOKEN_HERE")
@@ -11,7 +10,6 @@ TEACHER_ID = int(os.getenv("TEACHER_ID", "0")) if os.getenv("TEACHER_ID") else 0
 CLAUDE_API_KEY = os.getenv("CLAUDE_API_KEY", "YOUR_CLAUDE_API_KEY_HERE")
 
 bot = telebot.TeleBot(BOT_TOKEN)
-client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
 
 # Папка для сохранения фото
 HOMEWORK_DIR = "homework_submissions"
@@ -118,10 +116,10 @@ def handle_text(message):
     else:
         bot.reply_to(message, "👋 Отправь фото ДЗ или напиши /help")
 
-# ========== АНАЛИЗ С CLAUDE ==========
+# ========== АНАЛИЗ С CLAUDE (REST API) ==========
 
 def analyze_homework_with_claude(image_base64, caption):
-    """Анализирует фото ДЗ с помощью Claude Vision"""
+    """Анализирует фото ДЗ с помощью Claude Vision через REST API"""
     
     prompt = """
 Ты проверяешь домашнее задание по английскому языку. Анализируй фото ДЗ и дай подробную проверку.
@@ -161,10 +159,15 @@ RECOMMENDATIONS:
 - Пиши на русском и английском где нужно
 """
 
-    message = client.messages.create(
-        model="claude-opus-4-1",
-        max_tokens=1500,
-        messages=[
+    headers = {
+        "x-api-key": CLAUDE_API_KEY,
+        "content-type": "application/json"
+    }
+
+    body = {
+        "model": "claude-opus-4-1",
+        "max_tokens": 1500,
+        "messages": [
             {
                 "role": "user",
                 "content": [
@@ -183,9 +186,20 @@ RECOMMENDATIONS:
                 ]
             }
         ]
-    )
-    
-    return message.content[0].text
+    }
+
+    try:
+        response = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers=headers,
+            json=body,
+            timeout=60
+        )
+        response.raise_for_status()
+        result = response.json()
+        return result['content'][0]['text']
+    except Exception as e:
+        return f"Ошибка при анализе: {str(e)}"
 
 def parse_claude_response(response_text):
     """Парсит ответ Claude в структурированный формат"""
@@ -302,7 +316,7 @@ def generate_teacher_report(username, claude_response):
     
     if result["errors"]:
         report += "❌ ОШИБКИ:\n"
-        for i, error in enumerate(result["errors"][:10], 1):  # Первые 10 ошибок
+        for i, error in enumerate(result["errors"][:10], 1):
             report += f"{i}. {error}\n"
         if len(result["errors"]) > 10:
             report += f"... и ещё {len(result['errors']) - 10} ошибок\n"
@@ -312,7 +326,7 @@ def generate_teacher_report(username, claude_response):
     
     if result["recommendations"]:
         report += "\n💡 РЕКОМЕНДАЦИИ:\n"
-        for rec in result["recommendations"][:5]:  # Первые 5 рекомендаций
+        for rec in result["recommendations"][:5]:
             report += f"• {rec}\n"
     
     report += "\n━━━━━━━━━━━━━━━━\n"
