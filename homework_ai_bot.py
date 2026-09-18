@@ -197,8 +197,10 @@ RECOMMENDATIONS:
         )
         response.raise_for_status()
         result = response.json()
+        print(f"DEBUG: Claude response: {result}")
         return result['content'][0]['text']
     except Exception as e:
+        print(f"DEBUG: Error - {str(e)}")
         return f"Ошибка при анализе: {str(e)}"
 
 def parse_claude_response(response_text):
